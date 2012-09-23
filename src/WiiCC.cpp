@@ -83,7 +83,9 @@ bool wiicc_init(void) {
 
 	// read calibration data
 	wiicc_i2c_send_byte(0x20);
-	wiicc_i2c_recv_array(calibration_data, 12);
+	wiicc_i2c_recv_array(calibration_data, 6);
+	wiicc_i2c_send_byte(0x26);
+	wiicc_i2c_recv_array(calibration_data + 6, 6);
 
 	delayMicroseconds(1000);
 
