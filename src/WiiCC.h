@@ -21,5 +21,6 @@
 
 bool wiicc_init(void);
 byte *wiicc_update(void);
+byte *wiicc_calibration_data(void);
 
 #endif /* WIICC_H_ */

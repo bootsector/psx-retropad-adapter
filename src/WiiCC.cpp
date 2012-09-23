@@ -20,6 +20,7 @@
 #include <Wire.h>
 
 static byte button_data[16];
+static byte calibration_data[12];
 
 void wiicc_i2c_send_array(byte *data, int size) {
 	Wire.beginTransmission(0x52);
@@ -80,6 +81,10 @@ bool wiicc_init(void) {
 		return false;
 	}
 
+	// read calibration data
+	wiicc_i2c_send_byte(0x20);
+	wiicc_i2c_recv_array(calibration_data, 12);
+
 	delayMicroseconds(1000);
 
 	return true;
@@ -90,5 +95,9 @@ byte *wiicc_update(void) {
 	wiicc_i2c_recv_array(button_data, 6);
 
 	return button_data;
+}
+
+byte *wiicc_calibration_data(void) {
+	return calibration_data;
 }
 

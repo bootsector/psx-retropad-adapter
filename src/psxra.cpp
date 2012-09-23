@@ -294,8 +294,26 @@ void saturn_loop() {
 
 void wiicc_loop() {
 	byte *button_data;
+	byte *cal_data;
+	byte _lx, _ly, _rx, _ry;
+	byte lx_min, lx_max,rx_min, rx_max;
+	byte ly_min, ly_max, ry_min, ry_max;
 
 	while(!wiicc_init());
+
+	cal_data = wiicc_calibration_data();
+
+	lx_min = cal_data[1] >> 2;
+	lx_max = cal_data[0] >> 2;
+
+	ly_min = cal_data[4] >> 2;
+	ly_max = cal_data[3] >> 2;
+
+	rx_min = cal_data[7] >> 3;
+	rx_max = cal_data[6] >> 3;
+
+	ry_min = cal_data[10] >> 3;
+	ry_max = cal_data[9] >> 3;
 
 	for(;;) {
 		button_data = wiicc_update();
@@ -315,10 +333,40 @@ void wiicc_loop() {
 		l1 = ~button_data[4] & (1 << 5);
 		down = ~button_data[4] & (1 << 6);
 		right = ~button_data[4] & (1 << 7);
-		rx = map(((button_data[2] & 0x80) >> 7) | ((button_data[1] & 0xC0) >> 5) | ((button_data[0] & 0xC0) >> 3), 0, 31, 0, 255);
-		ry = ~map((button_data[2] & 0x1F), 0, 31, 0, 255);
-		lx = map((button_data[0] & 0x3F), 0, 63, 0, 255);
-		ly = ~map((button_data[1] & 0x3F), 0, 63, 0, 255);
+
+		_rx = ((button_data[2] & 0x80) >> 7) | ((button_data[1] & 0xC0) >> 5) | ((button_data[0] & 0xC0) >> 3);
+		_ry = (button_data[2] & 0x1F);
+		_lx = (button_data[0] & 0x3F);
+		_ly = (button_data[1] & 0x3F);
+
+		if(_rx < rx_min) {
+			_rx = rx_min;
+		} else if(_rx > rx_max) {
+			_rx = rx_max;
+		}
+
+		if(_ry < ry_min) {
+			_ry = ry_min;
+		} else if(_ry > ry_max) {
+			_ry = ry_max;
+		}
+
+		if(_lx < lx_min) {
+			_lx = lx_min;
+		} else if(_lx > lx_max) {
+			_lx = lx_max;
+		}
+
+		if(_ly < ly_min) {
+			_ly = ly_min;
+		} else if(_ly > ly_max) {
+			_ly = ly_max;
+		}
+
+		rx = map(_rx, rx_min, rx_max, 0, 255);
+		ry = ~map(_ry, ry_min, ry_max, 0, 255);
+		lx = map(_lx, lx_min, lx_max, 0, 255);
+		ly = ~map(_ly, ly_min, ly_max, 0, 255);
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
 				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
