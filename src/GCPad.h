@@ -16,11 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PSPADEMU_H_
-#define PSPADEMU_H_
+#ifndef GCPAD_H_
+#define GCPAD_H_
 
-void pspad_init(void);
-void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry);
-void pspad_set_spi_callback(void (*callback)(void));
+static inline void GCPad_send(byte *cmd, byte length);
+static inline void GCPad_recv(byte *buffer, byte bits);
+byte GCPad_init();
+void GCPad_read(bool disable_ints);
+byte *GCPad_data();
+void N64Pad_read(bool disable_ints);
+byte *N64Pad_data();
 
-#endif /* PSPADEMU_H_ */
+#endif /* GCPAD_H_ */

@@ -20,11 +20,11 @@
 #include "digitalWriteFast.h"
 #include "PSPadEmu.h"
 
-#define pinACK  9
-#define pinATT  10
-#define pinCMD  11
-#define pinDAT  12
-#define pinCLK  13
+#define pinACK  9  // Green  - DB9-6
+#define pinATT  10 // Yellow - DB9-4
+#define pinCMD  11 // Orange - DB9-3
+#define pinDAT  12 // Brown  - DB9-2
+#define pinCLK  13 // Blue   - DB9-1
 
 /*
  * Last 6 bytes from 0x42 response (Analog Mode):
@@ -55,6 +55,9 @@ volatile static byte c = 0xFF;
 
 /* Maximum numbers of bytes to return based on the current CMD and data array */
 volatile static byte limit = 8;
+
+/* Optional callback function to be called after SPI bytes transfer */
+static void (*spi_callback)(void) = NULL;
 
 /* Setup pins and initialize SPI hardware */
 void pspad_init(void) {
@@ -94,6 +97,9 @@ ISR (SPI_STC_vect) {
 		idx = 0;
 		SPDR = 0xFF;
 
+		if(spi_callback)
+			spi_callback();
+
 	} else {
 
 		SPDR = data_pointer[idx];
@@ -130,5 +136,9 @@ void pspad_set_pad_state(int left, int right, int up, int down, int square, int 
 	response_42[5]  = ry;
 	response_42[6]  = lx;
 	response_42[7]  = ly;
+}
+
+void pspad_set_spi_callback(void (*callback)(void)) {
+	spi_callback = callback;
 }
 

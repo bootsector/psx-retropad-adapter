@@ -24,6 +24,7 @@
 #include "saturn.h"
 #include "NESPad.h"
 #include "WiiCC.h"
+#include "GCPad.h"
 
 // PSX Buttons
 int up = 0;
@@ -49,9 +50,9 @@ int ry = 0x7F;
 
 // Extension cable detection pins
 #define DETPIN0 1 // DB9 pin 4
-#define DETPIN1 2
-#define DETPIN2 3
-#define DETPIN3 4
+#define DETPIN1 4
+#define DETPIN2 5
+#define DETPIN3 6
 
 // Possible values (as of today) returned by the detectPad() routine
 // Normal pads
@@ -235,10 +236,6 @@ void ps2_loop() {
 	}
 }
 
-void unsupported_pad() {
-	for(;;);
-}
-
 void neogeo_loop() {
 	int button_data;
 
@@ -375,6 +372,112 @@ void wiicc_loop() {
 
 }
 
+void gc_loop_helper(void) {
+	GCPad_read(false);
+}
+
+void gc_loop() {
+	byte *button_data;
+
+	GCPad_init();
+
+	GCPad_read(true);
+	button_data = GCPad_data();
+
+	pspad_set_spi_callback(gc_loop_helper);
+
+	for(;;) {
+		button_data = GCPad_data();
+
+		left = button_data[1] & 0x01;
+		right = button_data[1] & 0x02;
+		up = button_data[1] & 0x08;
+		down = button_data[1] & 0x04;
+
+		sqre = button_data[0] & 0x08;
+		cross = button_data[0] & 0x02;
+		triangle = button_data[0] & 0x04;
+		circle = button_data[0] & 0x01;
+
+		start = button_data[0] & 0x10;
+
+		l1 = button_data[1] & 0x40;
+		r1 = button_data[1] & 0x20;
+
+		l2 = r2 = button_data[1] & 0x10;
+
+		lx = button_data[2];
+		ly = ~button_data[3];
+		rx = button_data[4];
+		ry = ~button_data[5];
+
+		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+
+	}
+}
+
+void n64_loop_helper(void) {
+	N64Pad_read(false);
+}
+
+void n64_loop() {
+	byte *button_data;
+
+	GCPad_init();
+
+	N64Pad_read(true);
+	button_data = N64Pad_data();
+
+	pspad_set_spi_callback(n64_loop_helper);
+
+	for(;;) {
+		button_data = N64Pad_data();
+
+		left = button_data[0] & 0x02;
+		right = button_data[0] & 0x01;
+		up = button_data[0] & 0x08;
+		down = button_data[0] & 0x04;
+
+		sqre = button_data[0] & 0x40;
+		cross = button_data[0] & 0x80;
+
+		start = button_data[0] & 0x10;
+
+		r1 = button_data[1] & 0x10;
+		l1 = button_data[1] & 0x20;
+		l2 = r2 = button_data[0] & 0x20;
+
+
+		ry = 0x7F;
+
+		if(button_data[1] & 0x08) { // C Up
+			ry = 0x00;
+		} else if(button_data[1] & 0x04) { // C Down
+			ry = 0xFF;
+		}
+
+		rx = 0x7F;
+
+		if(button_data[1] & 0x02) { // C Left
+			rx = 0x00;
+		} else if(button_data[1] & 0x01) { // C Right
+			rx = 0xFF;
+		}
+
+		triangle = button_data[1] & 0x02; // triangle == C Left
+		circle = button_data[1] & 0x01; // circle == C Right
+
+		lx = ((button_data[2] >= 128) ? button_data[2] - 128 : button_data[2] + 128);
+		ly = ~(((button_data[3] >= 128) ? button_data[3] - 128 : button_data[3] + 128));
+
+		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+
+	}
+}
+
+
 void setup() {
 	// Init PS Pad emulation
 	pspad_init();
@@ -393,10 +496,10 @@ void loop() {
 		ps2_loop();
 		break;
 	case PAD_GC:
-		unsupported_pad();
+		gc_loop();
 		break;
 	case PAD_N64:
-		unsupported_pad();
+		n64_loop();
 		break;
 	case PAD_NEOGEO:
 		neogeo_loop();

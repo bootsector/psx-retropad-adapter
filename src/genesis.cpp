@@ -24,9 +24,9 @@
 #define DB9P2 A5
 #define DB9P3 0
 #define DB9P4 1
-#define DB9P6 2
-#define DB9P7 3
-#define DB9P9 4
+#define DB9P6 4
+#define DB9P7 5
+#define DB9P9 6
 
 #define DELAY 14
 

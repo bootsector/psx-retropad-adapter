@@ -23,9 +23,9 @@
 #define D1 A4
 #define D0 A5
 #define S0 0
-#define S1 2
-#define D3 3
-#define D2 4
+#define S1 4
+#define D3 5
+#define D2 6
 
 #define DELAY 7
 

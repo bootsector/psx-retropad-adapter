@@ -84,7 +84,7 @@ SRC = Wire/utility/twi.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
-CPPSRC = main.cpp psxra.cpp PSPadEmu.cpp genesis.cpp NESPad.cpp PS2Pad.cpp saturn.cpp WiiCC.cpp Wire/Wire.cpp
+CPPSRC = main.cpp psxra.cpp PSPadEmu.cpp genesis.cpp NESPad.cpp PS2Pad.cpp saturn.cpp WiiCC.cpp Wire/Wire.cpp GCPad.cpp
 
 
 # List Assembler source files here.
