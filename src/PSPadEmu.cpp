@@ -38,11 +38,31 @@
  * 	Left Joy  0x00 = Up    0xFF = Down      - Rightmost Byte
 */
 
-/* Main polling command */
-static byte response_42[8] = { 0x73, 0x5A, 0xFF, 0xFF, 0x7F, 0x7F, 0x7F, 0x7F };
+/* Response header */
+static byte response_header[2] = { 0x73, 0x5A };
 
-/* Enter/Exit config mode + polling */
-static byte response_43[3] = { 0x73, 0x5A, 0x01 };
+/* Main polling command */
+static byte response_42[6] = { 0xFF, 0xFF, 0x7F, 0x7F, 0x7F, 0x7F };
+
+/* Get more status info */
+static byte response_45[6] = { 0x01, 0x02, 0x01, 0x02, 0x01, 0x00 };
+
+/* Read an unknown constant value from controller (two pass) */
+static byte response_4C_0[6] = { 0x00, 0x00, 0x00, 0x04, 0x00, 0x00 };
+static byte response_4C_1[6] = { 0x00, 0x00, 0x00, 0x07, 0x00, 0x00 };
+
+/* Map bytes in the 0x42 command to actuate the vibration motors */
+static byte response_4D[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+/* Read an unknown constant value from controller */
+static byte response_47[6] = { 0x00, 0x00, 0x02, 0x00, 0x01, 0x00 };
+
+/* Read an unknown constant value from controller (two pass) */
+static byte response_46_0[6] = { 0x00, 0x00, 0x01, 0x02, 0x00, 0x0A };
+static byte response_46_1[6] = { 0x00, 0x00, 0x01, 0x01, 0x01, 0x14 };
+
+/* Tells whether we are in config mode or not (set by CMD 0x43) */
+volatile static byte in_config_mode = 0;
 
 /* Pointer to the data array that should be returned based on the current CMD received */
 volatile static byte *data_pointer = response_42;
@@ -67,14 +87,14 @@ void pspad_init(void) {
 	pinModeFast(pinATT, INPUT);
 	digitalWriteFast(pinATT, HIGH);
 
-	pinModeFast(pinCMD, INPUT);
-	digitalWriteFast(pinCMD, HIGH);
+	//pinModeFast(pinCMD, INPUT);
+	//digitalWriteFast(pinCMD, HIGH);
 
 	pinModeFast(pinDAT, OUTPUT);
 	digitalWriteFast(pinDAT, HIGH);
 
-	pinModeFast(pinCLK, INPUT);
-	digitalWriteFast(pinCLK, HIGH);
+	//pinModeFast(pinCLK, INPUT);
+	//digitalWriteFast(pinCLK, HIGH);
 
 	SPCR |= (1 << CPOL); // SCK HIGH when idle
 	SPCR |= (1 << CPHA); // setup data on falling edge of CLK, read on rising edge
@@ -86,6 +106,12 @@ void pspad_init(void) {
 
 	// turn on interrupts
 	SPCR |= _BV(SPIE);
+
+	// SS line Pin Change Interrupt Enable
+	PCICR |= (1 << PCIE0);
+	PCMSK0 |= (1 << PCINT2);
+
+	sei();
 }
 
 /* SPI interrupt routine */
@@ -97,12 +123,13 @@ ISR (SPI_STC_vect) {
 		idx = 0;
 		SPDR = 0xFF;
 
-		if(spi_callback)
-			spi_callback();
-
 	} else {
 
-		SPDR = data_pointer[idx];
+		if(idx > 1)
+			SPDR = data_pointer[idx - 2];
+		else
+			SPDR = response_header[idx];
+
 
 		if(idx == 1) {
 			switch(c) {
@@ -111,13 +138,40 @@ ISR (SPI_STC_vect) {
 				limit = 8;
 				break;
 			case 0x43:
-				data_pointer = response_43;
-				limit = 3;
+				data_pointer = response_42;
+				limit = 8;
+				in_config_mode = !in_config_mode;
+				break;
+			case 0x45:
+				data_pointer = response_45;
+				limit = 8;
+				break;
+			case 0x4c:
+				data_pointer = response_4C_0;
+				limit = 8;
+				break;
+			case 0x4d:
+				data_pointer = response_4D;
+				limit = 8;
+				break;
+			case 0x46:
+				data_pointer = response_46_0;
+				limit = 8;
+				break;
+			case 0x47:
+				data_pointer = response_47;
+				limit = 8;
 				break;
 			default:
 				data_pointer = response_42;
 				limit = 8;
 				break;
+			}
+		} else if(idx == 3) {
+			if(data_pointer == response_4C_0 || data_pointer == response_4C_1) {
+				data_pointer = (c == 0x00) ? response_4C_0 : response_4C_1;
+			} else if(data_pointer == response_46_0 || data_pointer == response_46_1) {
+				data_pointer = (c == 0x00) ? response_46_0 : response_46_1;
 			}
 		}
 
@@ -125,17 +179,41 @@ ISR (SPI_STC_vect) {
 
 		idx++;
 
+		asm volatile ("nop\nnop\nnop\nnop\n");
+
 		digitalWriteFast(pinACK, HIGH);
 	}
 }
 
+void pspad_ss_int_handler(void) {
+	if(digitalReadFast(pinATT)) {
+		SPDR = 0xFF;
+		idx = 0;
+
+		byte byte_cfg = in_config_mode ? 0xF3 : 0x73;
+
+		response_header[0] = byte_cfg;
+
+		data_pointer = response_42;
+		limit = 8;
+
+		if(spi_callback)
+			spi_callback();
+	}
+}
+
+ISR(PCINT0_vect)
+{
+	pspad_ss_int_handler();
+}
+
 void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry) {
-	response_42[2]  = (!select << 0) | (!l3 << 1) | (!r3 << 2) | (!start << 3) | (!up << 4) | (!right << 5) | (!down << 6) | (!left << 7);
-	response_42[3]  = (!l2 << 0) | (!r2 << 1) | (!l1 << 2) | (!r1 << 3) | (!triangle << 4) | (!circle << 5) | (!cross << 6) | (!square << 7);
-	response_42[4]  = rx;
-	response_42[5]  = ry;
-	response_42[6]  = lx;
-	response_42[7]  = ly;
+	response_42[0]  = (!select << 0) | (!l3 << 1) | (!r3 << 2) | (!start << 3) | (!up << 4) | (!right << 5) | (!down << 6) | (!left << 7);
+	response_42[1]  = (!l2 << 0) | (!r2 << 1) | (!l1 << 2) | (!r1 << 3) | (!triangle << 4) | (!circle << 5) | (!cross << 6) | (!square << 7);
+	response_42[2]  = rx;
+	response_42[3]  = ry;
+	response_42[4]  = lx;
+	response_42[5]  = ly;
 }
 
 void pspad_set_spi_callback(void (*callback)(void)) {
