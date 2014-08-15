@@ -180,6 +180,7 @@ ISR (SPI_STC_vect) {
 		idx++;
 
 		asm volatile ("nop\nnop\nnop\nnop\n");
+		asm volatile ("nop\nnop\nnop\nnop\n");
 
 		digitalWriteFast(pinACK, HIGH);
 	}
