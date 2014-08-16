@@ -111,13 +111,19 @@ void pspad_init(void) {
 	PCICR |= (1 << PCIE0);
 	PCMSK0 |= (1 << PCINT2);
 
+	/* Initializes SPI data register */
+	SPDR = 0xFF;
+
 	sei();
 }
 
 /* SPI interrupt routine */
 ISR (SPI_STC_vect) {
+
+	/* Read byte from SPI data register */
 	c = SPDR;
 
+	/* If first byte is not 0x01 or we're sending the last buffer byte, don't ACK and reset */
 	if(((idx == 0) && (c != 0x01)) || (idx >= limit)) {
 
 		idx = 0;
@@ -125,13 +131,20 @@ ISR (SPI_STC_vect) {
 
 	} else {
 
-		if(idx > 1)
-			SPDR = data_pointer[idx - 2];
-		else
-			SPDR = response_header[idx];
+		/* Send data from header or response buffer depending on the current index */
+		SPDR = (idx > 1) ? data_pointer[idx - 2] : response_header[idx];
 
+		/* Acknowledge byte received from SPI master */
+		digitalWriteFast(pinACK, LOW);
 
+		asm volatile ("nop\nnop\nnop\nnop\n");
+		asm volatile ("nop\nnop\nnop\nnop\n");
+
+		digitalWriteFast(pinACK, HIGH);
+
+		/* Process known commands sent by SPI master */
 		if(idx == 1) {
+
 			switch(c) {
 			case 0x42:
 				data_pointer = response_42;
@@ -140,7 +153,7 @@ ISR (SPI_STC_vect) {
 			case 0x43:
 				data_pointer = response_42;
 				limit = 8;
-				in_config_mode = !in_config_mode;
+				in_config_mode = 1;
 				break;
 			case 0x45:
 				data_pointer = response_45;
@@ -167,22 +180,27 @@ ISR (SPI_STC_vect) {
 				limit = 8;
 				break;
 			}
+
+		/* When idx == 3 we might process some parameters depending on the current command */
 		} else if(idx == 3) {
+
 			if(data_pointer == response_4C_0 || data_pointer == response_4C_1) {
+
 				data_pointer = (c == 0x00) ? response_4C_0 : response_4C_1;
+
 			} else if(data_pointer == response_46_0 || data_pointer == response_46_1) {
+
 				data_pointer = (c == 0x00) ? response_46_0 : response_46_1;
+
 			}
+
+			if(in_config_mode) {
+				in_config_mode = c;
+			}
+
 		}
 
-		digitalWriteFast(pinACK, LOW);
-
 		idx++;
-
-		asm volatile ("nop\nnop\nnop\nnop\n");
-		asm volatile ("nop\nnop\nnop\nnop\n");
-
-		digitalWriteFast(pinACK, HIGH);
 	}
 }
 
