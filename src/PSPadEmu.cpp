@@ -153,7 +153,7 @@ ISR (SPI_STC_vect) {
 			case 0x43:
 				data_pointer = response_42;
 				limit = 8;
-				in_config_mode = 1;
+				in_config_mode = !in_config_mode;
 				break;
 			case 0x45:
 				data_pointer = response_45;
@@ -192,10 +192,6 @@ ISR (SPI_STC_vect) {
 
 				data_pointer = (c == 0x00) ? response_46_0 : response_46_1;
 
-			}
-
-			if(in_config_mode) {
-				in_config_mode = c;
 			}
 
 		}
