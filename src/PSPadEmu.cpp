@@ -61,9 +61,6 @@ static byte response_47[6] = { 0x00, 0x00, 0x02, 0x00, 0x01, 0x00 };
 static byte response_46_0[6] = { 0x00, 0x00, 0x01, 0x02, 0x00, 0x0A };
 static byte response_46_1[6] = { 0x00, 0x00, 0x01, 0x01, 0x01, 0x14 };
 
-/* Tells whether we are in config mode or not (set by CMD 0x43) */
-volatile static byte in_config_mode = 0;
-
 /* Pointer to the data array that should be returned based on the current CMD received */
 volatile static byte *data_pointer = response_42;
 
@@ -72,6 +69,9 @@ volatile static byte idx = 0;
 
 /* Last byte received from the SPI master (i.e. PlayStation) */
 volatile static byte c = 0xFF;
+
+/* Last command received from SPI master */
+volatile static byte last_command = 0xFF;
 
 /* Maximum numbers of bytes to return based on the current CMD and data array */
 volatile static byte limit = 8;
@@ -139,21 +139,21 @@ ISR (SPI_STC_vect) {
 
 		asm volatile ("nop\nnop\nnop\nnop\n");
 		asm volatile ("nop\nnop\nnop\nnop\n");
+		asm volatile ("nop\nnop\nnop\nnop\n");
+		asm volatile ("nop\nnop\nnop\nnop\n");
 
 		digitalWriteFast(pinACK, HIGH);
 
 		/* Process known commands sent by SPI master */
 		if(idx == 1) {
 
+			last_command = c;
+
 			switch(c) {
 			case 0x42:
-				data_pointer = response_42;
-				limit = 8;
-				break;
 			case 0x43:
 				data_pointer = response_42;
 				limit = 8;
-				in_config_mode = !in_config_mode;
 				break;
 			case 0x45:
 				data_pointer = response_45;
@@ -184,14 +184,16 @@ ISR (SPI_STC_vect) {
 		/* When idx == 3 we might process some parameters depending on the current command */
 		} else if(idx == 3) {
 
-			if(data_pointer == response_4C_0 || data_pointer == response_4C_1) {
-
+			switch(last_command) {
+			case 0x4C:
 				data_pointer = (c == 0x00) ? response_4C_0 : response_4C_1;
-
-			} else if(data_pointer == response_46_0 || data_pointer == response_46_1) {
-
+				break;
+			case 0x46:
 				data_pointer = (c == 0x00) ? response_46_0 : response_46_1;
-
+				break;
+			case 0x43:
+				response_header[0] = (c == 0x01) ? 0xF3 : 0x73;
+				break;
 			}
 
 		}
@@ -204,13 +206,6 @@ void pspad_ss_int_handler(void) {
 	if(digitalReadFast(pinATT)) {
 		SPDR = 0xFF;
 		idx = 0;
-
-		byte byte_cfg = in_config_mode ? 0xF3 : 0x73;
-
-		response_header[0] = byte_cfg;
-
-		data_pointer = response_42;
-		limit = 8;
 
 		if(spi_callback)
 			spi_callback();
