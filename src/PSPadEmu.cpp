@@ -39,13 +39,17 @@
 */
 
 /* Response header */
-static byte response_header[2] = { 0x73, 0x5A };
+static byte response_header[2] = { 0x41, 0x5A };
 
 /* Main polling command */
 static byte response_42[6] = { 0xFF, 0xFF, 0x7F, 0x7F, 0x7F, 0x7F };
 
-/* Get more status info */
-static byte response_45[6] = { 0x01, 0x02, 0x01, 0x02, 0x01, 0x00 };
+/* 0x44: Switch modes between digital and analog */
+/* ox4F: Add or remove analog response bytes from the main polling command  */
+static byte response_44_4F[6] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+/* Get more status info - index 2 tells if LED is OFF (0x00) or ON (0x01)*/
+static byte response_45[6] = { 0x01, 0x02, 0x00, 0x02, 0x01, 0x00 };
 
 /* Read an unknown constant value from controller (two pass) */
 static byte response_4C_0[6] = { 0x00, 0x00, 0x00, 0x04, 0x00, 0x00 };
@@ -73,14 +77,17 @@ volatile static byte c = 0xFF;
 /* Last command received from SPI master */
 volatile static byte last_command = 0xFF;
 
+/* Tells whether we are in digital or analog mode */
+volatile static byte analog_mode = 0x00;
+
 /* Maximum numbers of bytes to return based on the current CMD and data array */
-volatile static byte limit = 8;
+volatile static byte limit = 4;
 
 /* Optional callback function to be called after SPI bytes transfer */
 static void (*spi_callback)(void) = NULL;
 
 /* Setup pins and initialize SPI hardware */
-void pspad_init(void) {
+void pspad_init(int mode) {
 	pinModeFast(pinACK, OUTPUT);
 	digitalWriteFast(pinACK, HIGH);
 
@@ -95,6 +102,8 @@ void pspad_init(void) {
 
 	//pinModeFast(pinCLK, INPUT);
 	//digitalWriteFast(pinCLK, HIGH);
+
+	pspad_set_mode(mode);
 
 	SPCR |= (1 << CPOL); // SCK HIGH when idle
 	SPCR |= (1 << CPHA); // setup data on falling edge of CLK, read on rising edge
@@ -150,35 +159,43 @@ ISR (SPI_STC_vect) {
 			last_command = c;
 
 			switch(c) {
-			case 0x42:
 			case 0x43:
 				data_pointer = response_42;
-				limit = 8;
+				break;
+			case 0x42:
+				data_pointer = response_42;
 				break;
 			case 0x45:
 				data_pointer = response_45;
-				limit = 8;
 				break;
 			case 0x4c:
 				data_pointer = response_4C_0;
-				limit = 8;
 				break;
 			case 0x4d:
 				data_pointer = response_4D;
-				limit = 8;
+				break;
+			case 0x44:
+				data_pointer = response_44_4F;
+				break;
+			case 0x4f:
+				data_pointer = response_44_4F;
 				break;
 			case 0x46:
 				data_pointer = response_46_0;
-				limit = 8;
 				break;
 			case 0x47:
 				data_pointer = response_47;
-				limit = 8;
 				break;
 			default:
 				data_pointer = response_42;
-				limit = 8;
 				break;
+			}
+
+			// If in config mode, limit should be always 8
+			if(response_header[0] == 0xF3) {
+				limit = 8;
+			} else {
+				limit = analog_mode ? 8 : 4;
 			}
 
 		/* When idx == 3 we might process some parameters depending on the current command */
@@ -192,7 +209,15 @@ ISR (SPI_STC_vect) {
 				data_pointer = (c == 0x00) ? response_46_0 : response_46_1;
 				break;
 			case 0x43:
-				response_header[0] = (c == 0x01) ? 0xF3 : 0x73;
+				if(c == 0x01) {
+					response_header[0] = 0xF3;
+				} else {
+					response_header[0] = analog_mode ? 0x73 : 0x41;
+				}
+				break;
+			case 0x44:
+				analog_mode = c;
+				response_45[2] = analog_mode ? 0x01 : 0x00;
 				break;
 			}
 
@@ -226,6 +251,24 @@ void pspad_set_pad_state(int left, int right, int up, int down, int square, int 
 	response_42[5]  = ly;
 
 	response_header[1] = analog ? 0x00 : 0x5A;
+}
+
+void pspad_set_mode(int mode) {
+	if(mode == PSPADEMU_MODE_ANALOG) {
+		analog_mode = 0x01;
+
+		if(response_header[0] != 0xF3)
+			response_header[0] = 0x73;
+
+		response_45[2] = 0x01;
+	} else {
+		analog_mode = 0x00;
+
+		if(response_header[0] != 0xF3)
+			response_header[0] = 0x41;
+
+		response_45[2] = 0x00;
+	}
 }
 
 void pspad_set_spi_callback(void (*callback)(void)) {

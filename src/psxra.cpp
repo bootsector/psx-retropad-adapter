@@ -527,7 +527,7 @@ void setup() {
 #endif
 
 	// Init PS Pad emulation
-	pspad_init();
+	pspad_init(PSPADEMU_MODE_ANALOG);
 }
 
 void loop() {
