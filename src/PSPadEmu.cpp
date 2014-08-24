@@ -160,8 +160,6 @@ ISR (SPI_STC_vect) {
 
 			switch(c) {
 			case 0x43:
-				data_pointer = response_42;
-				break;
 			case 0x42:
 				data_pointer = response_42;
 				break;
@@ -175,8 +173,6 @@ ISR (SPI_STC_vect) {
 				data_pointer = response_4D;
 				break;
 			case 0x44:
-				data_pointer = response_44_4F;
-				break;
 			case 0x4f:
 				data_pointer = response_44_4F;
 				break;
