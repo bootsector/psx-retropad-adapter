@@ -153,7 +153,7 @@ void genesis_loop() {
 		start = button_data & GENESIS_START;
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
 
 	}
 }
@@ -178,7 +178,7 @@ void nes_loop() {
 		start = button_data & 8;
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
 	}
 }
 
@@ -205,7 +205,7 @@ void snes_loop() {
 		r1 = button_data & 2048;
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
 	}
 }
 
@@ -247,7 +247,7 @@ void ps2_loop() {
 		ry = PS2Pad::stick(PSS_RY);
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
 	}
 }
 
@@ -271,7 +271,7 @@ void neogeo_loop() {
 		cross = button_data & 0x200; // D button is also 0x2000
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
 	}
 }
 
@@ -300,7 +300,7 @@ void saturn_loop() {
 		start = button_data & SATURN_START;
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
 	}
 }
 
@@ -381,7 +381,7 @@ void wiicc_loop() {
 		ly = ~map(_ly, ly_min, ly_max, 0, 255);
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
 
 	}
 
@@ -427,7 +427,7 @@ void gc_loop() {
 		ry = ~button_data[5];
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
 
 	}
 }
@@ -487,7 +487,7 @@ void n64_loop() {
 		ly = ~(((button_data[3] >= 128) ? button_data[3] - 128 : button_data[3] + 128));
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
 
 	}
 }
@@ -512,7 +512,7 @@ void tg16_loop() {
 		start = button_data & (1 << TG16_RUN);
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-						select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
+						select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
 	}
 }
 

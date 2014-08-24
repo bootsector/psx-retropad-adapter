@@ -217,13 +217,15 @@ ISR(PCINT0_vect)
 	pspad_ss_int_handler();
 }
 
-void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry) {
+void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry, int analog) {
 	response_42[0]  = (!select << 0) | (!l3 << 1) | (!r3 << 2) | (!start << 3) | (!up << 4) | (!right << 5) | (!down << 6) | (!left << 7);
 	response_42[1]  = (!l2 << 0) | (!r2 << 1) | (!l1 << 2) | (!r1 << 3) | (!triangle << 4) | (!circle << 5) | (!cross << 6) | (!square << 7);
 	response_42[2]  = rx;
 	response_42[3]  = ry;
 	response_42[4]  = lx;
 	response_42[5]  = ly;
+
+	response_header[1] = analog ? 0x00 : 0x5A;
 }
 
 void pspad_set_spi_callback(void (*callback)(void)) {

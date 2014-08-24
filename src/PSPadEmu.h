@@ -21,7 +21,7 @@
 
 void pspad_init(void);
 void pspad_ss_int_handler(void);
-void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry);
+void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry, int analog);
 void pspad_set_spi_callback(void (*callback)(void));
 
 #endif /* PSPADEMU_H_ */
