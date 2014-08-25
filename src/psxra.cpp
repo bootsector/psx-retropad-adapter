@@ -152,8 +152,12 @@ void genesis_loop() {
 		select = button_data & GENESIS_MODE;
 		start = button_data & GENESIS_START;
 
+		if(up && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 
 	}
 }
@@ -177,8 +181,12 @@ void nes_loop() {
 		select = button_data & 4;
 		start = button_data & 8;
 
+		if(select && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 	}
 }
 
@@ -204,8 +212,12 @@ void snes_loop() {
 		l1 = button_data & 1024;
 		r1 = button_data & 2048;
 
+		if(select && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 	}
 }
 
@@ -246,8 +258,12 @@ void ps2_loop() {
 		rx = PS2Pad::stick(PSS_RX);
 		ry = PS2Pad::stick(PSS_RY);
 
+		if(select && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 	}
 }
 
@@ -270,8 +286,12 @@ void neogeo_loop() {
 		circle = button_data & 0x400;
 		cross = button_data & 0x200; // D button is also 0x2000
 
+		if(select && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 	}
 }
 
@@ -299,8 +319,12 @@ void saturn_loop() {
 
 		start = button_data & SATURN_START;
 
+		if(up && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 	}
 }
 
@@ -380,8 +404,12 @@ void wiicc_loop() {
 		lx = map(_lx, lx_min, lx_max, 0, 255);
 		ly = ~map(_ly, ly_min, ly_max, 0, 255);
 
+		if(~button_data[4] & (1 << 3)) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, ~button_data[4] & (1 << 3));
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 
 	}
 
@@ -426,8 +454,12 @@ void gc_loop() {
 		rx = button_data[4];
 		ry = ~button_data[5];
 
+		if(up && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 
 	}
 }
@@ -486,8 +518,12 @@ void n64_loop() {
 		lx = ((button_data[2] >= 128) ? button_data[2] - 128 : button_data[2] + 128);
 		ly = ~(((button_data[3] >= 128) ? button_data[3] - 128 : button_data[3] + 128));
 
+		if(up && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, up && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 
 	}
 }
@@ -511,8 +547,12 @@ void tg16_loop() {
 		select = button_data & (1 << TG16_SELECT);
 		start = button_data & (1 << TG16_RUN);
 
+		if(select && start) {
+			pspad_toggle_mode();
+		}
+
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-						select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
+						select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry);
 	}
 }
 

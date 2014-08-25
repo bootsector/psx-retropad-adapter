@@ -80,6 +80,10 @@ volatile static byte last_command = 0xFF;
 /* Tells whether we are in digital or analog mode */
 volatile static byte analog_mode = 0x00;
 
+/* Timeout so we don't change modes more than once within a second */
+#define TOGGLE_MODE_TIMEOUT_VALUE 60
+volatile static byte toggle_mode_timeout = TOGGLE_MODE_TIMEOUT_VALUE;
+
 /* Maximum numbers of bytes to return based on the current CMD and data array */
 volatile static byte limit = 4;
 
@@ -217,6 +221,9 @@ ISR (SPI_STC_vect) {
 				break;
 			}
 
+			// Revert toggle status byte on header if changed by the set_mode function
+			response_header[1] = 0x5A;
+
 		}
 
 		idx++;
@@ -228,9 +235,27 @@ void pspad_ss_int_handler(void) {
 		SPDR = 0xFF;
 		idx = 0;
 
+		if(toggle_mode_timeout > 0) {
+			toggle_mode_timeout--;
+		}
+
 		if(spi_callback)
 			spi_callback();
 	}
+}
+
+void pspad_toggle_mode(void) {
+
+	if(toggle_mode_timeout > 0)
+		return;
+
+	if(analog_mode) {
+		pspad_set_mode(PSPADEMU_MODE_DIGITAL);
+	} else {
+		pspad_set_mode(PSPADEMU_MODE_ANALOG);
+	}
+
+	toggle_mode_timeout = TOGGLE_MODE_TIMEOUT_VALUE;
 }
 
 ISR(PCINT0_vect)
@@ -238,15 +263,13 @@ ISR(PCINT0_vect)
 	pspad_ss_int_handler();
 }
 
-void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry, int analog) {
+void pspad_set_pad_state(int left, int right, int up, int down, int square, int triangle, int circle, int cross, int select, int start, int l1, int l2, int r1, int r2, int l3, int r3, int lx, int ly, int rx, int ry) {
 	response_42[0]  = (!select << 0) | (!l3 << 1) | (!r3 << 2) | (!start << 3) | (!up << 4) | (!right << 5) | (!down << 6) | (!left << 7);
 	response_42[1]  = (!l2 << 0) | (!r2 << 1) | (!l1 << 2) | (!r1 << 3) | (!triangle << 4) | (!circle << 5) | (!cross << 6) | (!square << 7);
 	response_42[2]  = rx;
 	response_42[3]  = ry;
 	response_42[4]  = lx;
 	response_42[5]  = ly;
-
-	response_header[1] = analog ? 0x00 : 0x5A;
 }
 
 void pspad_set_mode(int mode) {
@@ -265,6 +288,8 @@ void pspad_set_mode(int mode) {
 
 		response_45[2] = 0x00;
 	}
+
+	response_header[1] = 0x00;
 }
 
 void pspad_set_spi_callback(void (*callback)(void)) {
