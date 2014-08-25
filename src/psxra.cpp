@@ -381,7 +381,7 @@ void wiicc_loop() {
 		ly = ~map(_ly, ly_min, ly_max, 0, 255);
 
 		pspad_set_pad_state(left, right, up, down, sqre, triangle, circle, cross,
-				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, select && start);
+				select, start, l1, l2, r1, r2, l3, r3, lx, ly, rx, ry, ~button_data[4] & (1 << 3));
 
 	}
 
