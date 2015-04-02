@@ -65,6 +65,7 @@ bool wiicc_init(void) {
 	static byte disable_encryption_cmd[] = { 0xF0, 0x55, 0xFB, 0x00 };
 	byte extension_id[6];
 	static byte cc_id[] = { 0x00, 0x00, 0xa4, 0x20, 0x01, 0x01 };
+	byte alternate_calibration_data[] = { 0xFC, 0x04, 0x7E };
 
 	memset(button_data, 0x00, 16);
 
@@ -77,7 +78,7 @@ bool wiicc_init(void) {
 	wiicc_i2c_send_byte(0xFA);
 	wiicc_i2c_recv_array(extension_id, 6);
 
-	if(memcmp(extension_id, cc_id, 6) != 0) {
+	if(memcmp(extension_id + 2, cc_id + 2, 4) != 0) {
 		return false;
 	}
 
@@ -86,6 +87,12 @@ bool wiicc_init(void) {
 	wiicc_i2c_recv_array(calibration_data, 6);
 	wiicc_i2c_send_byte(0x26);
 	wiicc_i2c_recv_array(calibration_data + 6, 6);
+
+	for(int i = 0; i < 12; i++) {
+		if(calibration_data[i] == 0) {
+			calibration_data[i] = alternate_calibration_data[i % 3];
+		}
+	}
 
 	delayMicroseconds(1000);
 
