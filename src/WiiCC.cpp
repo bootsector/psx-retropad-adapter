@@ -89,7 +89,7 @@ bool wiicc_init(void) {
 	wiicc_i2c_recv_array(calibration_data + 6, 6);
 
 	for(int i = 0; i < 12; i++) {
-		if(calibration_data[i] == 0) {
+		if(calibration_data[i % 6] == 0 || calibration_data[i % 6] == 0xFF) {
 			calibration_data[i] = alternate_calibration_data[i % 3];
 		}
 	}
